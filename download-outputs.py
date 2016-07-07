@@ -8,18 +8,14 @@ import os
 def isolate_matrix_configuration_from_url(url, matrix_scopes):
     """
     :param url: url to process
-    :return: string which contains "SCOPE1-SCOPE2...."
+    :param matrix_scopes list of scopes which will be used
+    :return: string which contains "SCOPE1-SCOPE2..."
     """
     name = ''
     for scope in matrix_scopes:
-        if name == '':
-            name += re.search(scope + '=(.+?)[^a-zA-Z0-9]', url).group(1)
-        else:
-            name += '-' + re.search(scope + '=(.+?)[^a-zA-Z0-9]', url).group(1)
+        scope_value = re.search(scope + '=(.+?)[^a-zA-Z0-9]', url).group(1)
+        name += ('' if name == '' else '-') + scope_value
     return name
-    # template = re.search('TEMPLATE=(.+?)[^a-zA-Z0-9]', url).group(1)
-    # suite = re.search('SUITE=(.+?)[^a-zA-Z0-9]', url).group(1)
-    # return template + '-' + suite
 
 def check_if_folder_exists(folder_name):
     if not os.path.isdir(folder_name):
@@ -36,7 +32,6 @@ def download_console_output_for_each_configuration(runs, build_number, matrix_sc
         f.close()
 
 def main(argv):
-    print argv
     use_string = argv[0] + " -b <number> -u <username> [-p <password>] -m <scope1,scope2...> -s <url> -j <job-name>"
     build_number = ''
     username = ''
@@ -66,7 +61,7 @@ def main(argv):
         elif opt in ("-j", "--job-name"):
             job_name = arg
 
-    # todo requested arguments!!
+    # todo requested arguments checks!!
 
     if password == '':
         password = getpass.getpass()
