@@ -34,26 +34,31 @@ def download_console_output_for_each_configuration(runs, build_number, matrix_sc
         f.write(console)
         f.close()
 
-def main(argv):
+def get_parsed_arguments(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--server-url', nargs='?', required=True, help="Url of jenkins frontend")
     parser.add_argument('-j', '--job-name', nargs='?', required=True, help="Name of master job")
     parser.add_argument('-b', '--build-number', nargs='?', required=True)
-    parser.add_argument('-m', '--matrix-scopes', nargs='+', required=True, help="Scopes (dimensions) of configuration"
+    parser.add_argument('-m', '--matrix-scopes', nargs='+', required=True, help="Scopes (dimensions) of configuration "
                                                                                 "matrix")
     parser.add_argument('-u', '--username', nargs='?', required=True)
-    parser.add_argument('-p', '--password', nargs='?', required=False, default='', help="If not defined, user will be"
+    parser.add_argument('-p', '--password', nargs='?', required=False, default='', help="If not defined, user will be "
                                                                                         "asked for password in "
                                                                                         "interactive mode")
 
     args = vars(parser.parse_args(argv[1:]))
 
     if args['password'] == '':
-        password = getpass.getpass()
-    else:
-        password = args['password']
+        args['password'] = getpass.getpass()
 
-    server = Jenkins(args['server_url'], ssl_verify=False, username=args['username'], password=password)
+    return args
+
+
+def main(argv):
+    args = get_parsed_arguments(argv)
+
+    #SSL disabled for now since it can't verify SSL certificate
+    server = Jenkins(args['server_url'], ssl_verify=False, username=args['username'], password=args['password'])
     master_job = server.get_job(args['job_name'])
     build = master_job.get_build(int(args['build_number']))
     runs = build.get_matrix_runs()
