@@ -1,6 +1,6 @@
 Simple script for downloading console outputs from all jobs which are inside configuration matrix
 
-'''
+```
 Usage: download-outputs.py [-h] -s [SERVER_URL] -j [JOB_NAME] -b
                            [BUILD_NUMBER] -m MATRIX_SCOPES [MATRIX_SCOPES ...]
                            -u [USERNAME] [-p [PASSWORD]]
@@ -17,4 +17,4 @@ Usage: download-outputs.py [-h] -s [SERVER_URL] -j [JOB_NAME] -b
   -p [PASSWORD], --password [PASSWORD]
                         If not defined, user will be asked for password in
                         interactive mode
-'''
+```
