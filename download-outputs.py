@@ -1,7 +1,7 @@
 from jenkinsapi.jenkins import Jenkins
 import sys
-import getopt
 import getpass
+import argparse
 import re
 import os
 
@@ -14,7 +14,10 @@ def isolate_matrix_configuration_from_url(url, matrix_scopes):
     name = ''
     for scope in matrix_scopes:
         scope_value = re.search(scope + '=(.+?)[^a-zA-Z0-9]', url).group(1)
-        name += ('' if name == '' else '-') + scope_value
+        if scope_value:
+            name += ('' if name == '' else '-') + scope_value
+        else:
+            raise NameError("Scope '" + scope + "' not found in url '" + url + "'!")
     return name
 
 def check_if_folder_exists(folder_name):
@@ -32,47 +35,31 @@ def download_console_output_for_each_configuration(runs, build_number, matrix_sc
         f.close()
 
 def main(argv):
-    use_string = argv[0] + " -b <number> -u <username> [-p <password>] -m <scope1,scope2...> -s <url> -j <job-name>"
-    build_number = ''
-    username = ''
-    password = ''
-    server_url = ''
-    job_name = ''
-    matrix_scopes = []
-    try:
-        opts, args = getopt.getopt(argv[1:], "hb:u:p:m:s:j:",["build=", "username=", "password=", "matrix-scopes=", "server-url=", "job-name="])
-    except getopt.GetoptError:
-        print use_string
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print use_string
-            sys.exit()
-        elif opt in ("-b", "--build"):
-            build_number = arg
-        elif opt in ("-u", "--username"):
-            username = arg
-        elif opt in ("-p", "--password"):
-            password = arg
-        elif opt in ("-m", "--matrix-scopes"):
-            matrix_scopes = arg.split(',')
-        elif opt in ("-s", "--server-url"):
-            server_url = arg
-        elif opt in ("-j", "--job-name"):
-            job_name = arg
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--server-url', nargs='?', required=True, help="Url of jenkins frontend")
+    parser.add_argument('-j', '--job-name', nargs='?', required=True, help="Name of master job")
+    parser.add_argument('-b', '--build-number', nargs='?', required=True)
+    parser.add_argument('-m', '--matrix-scopes', nargs='+', required=True, help="Scopes (dimensions) of configuration"
+                                                                                "matrix")
+    parser.add_argument('-u', '--username', nargs='?', required=True)
+    parser.add_argument('-p', '--password', nargs='?', required=False, default='', help="If not defined, user will be"
+                                                                                        "asked for password in "
+                                                                                        "interactive mode")
 
-    # todo requested arguments checks!!
+    args = vars(parser.parse_args(argv[1:]))
 
-    if password == '':
+    if args['password'] == '':
         password = getpass.getpass()
+    else:
+        password = args['password']
 
-    server = Jenkins(server_url, ssl_verify=False, username=username,
-                     password=password)
-    master_job = server.get_job(job_name)
-    build = master_job.get_build(int(build_number))
+    server = Jenkins(args['server_url'], ssl_verify=False, username=args['username'], password=password)
+    master_job = server.get_job(args['job_name'])
+    build = master_job.get_build(int(args['build_number']))
     runs = build.get_matrix_runs()
 
-    download_console_output_for_each_configuration(runs=runs, build_number=build_number, matrix_scopes=matrix_scopes)
+    download_console_output_for_each_configuration(runs=runs, build_number=args['build_number'],
+                                                   matrix_scopes=args['matrix_scopes'])
 
 if __name__ == "__main__":
    main(sys.argv)
